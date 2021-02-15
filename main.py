@@ -12,9 +12,9 @@ clock = pygame.time.Clock()
 
 # ---------- GAME VARIABLES -----------
 class Ray:
-    def __init__(self,distance,texture_letter,texture_offset_x,x,y):
+    def __init__(self,distance,texture_idx,texture_offset_x,x,y):
         self.distance = distance
-        self.texture_letter = texture_letter
+        self.texture_index = texture_idx
         self.texture_offset_x = texture_offset_x
         self.x = x
         self.y = y
@@ -45,23 +45,23 @@ pdir = PI/2
 mapWidth = 8
 mapHeight = 8
 map = [
-    ["a", "a", "a", "c", "a", "a", "a", "a"],
-    ["a", "c", "c", " ", "c", "a", " ", "a"],
-    ["a", " ", " ", " ", " ", "a", " ", "a"],
-    ["a", " ", " ", " ", " ", "d", " ", "a"],
-    ["a", " ", " ", " ", " ", "a", " ", "a"],
-    ["a", " ", " ", " ", " ", "a", " ", "a"],
-    ["a", "c", "c", "c", "c", "a", " ", "a"],
-    ["a", "a", "a", "a", "a", "a", "a", "a"]
+    [1,1,1,1,1,1,1,1],
+    [1,3,3,3,3,2,0,1],
+    [1,0,0,0,0,2,0,1],
+    [1,0,0,0,0,2,0,1],
+    [1,0,0,0,0,4,0,1],
+    [1,0,0,0,0,2,0,1],
+    [1,3,3,0,3,2,0,1],
+    [1,1,1,3,1,1,1,1],
 ]
 
 
 def CheckPointCollision(x, y):
     if x > mapWidth-1 or x < 0:
-        return [True," "]
+        return [True,0]
     elif y > mapHeight-1 or y < 0:
-        return [True, " "]
-    return [map[math.floor(x)][math.floor(y)] != " ",map[math.floor(x)][math.floor(y)]]
+        return [True, 0]
+    return [map[math.floor(x)][math.floor(y)] != 0,map[math.floor(x)][math.floor(y)]]
 
 
 def degtorad(degrees):
@@ -79,7 +79,8 @@ def adjustrad(rad):
 def CalculateRay(x, y, direction):
     if direction == 0:
         return [px, py]
-    letter = 0
+    last_index = 0
+    index = 0
     # ------ CALCULATE X == 1 ------
     x_mult = 0
     y_mult = 0
@@ -113,10 +114,10 @@ def CalculateRay(x, y, direction):
         fcurrent_x = round(current_x)
         fcurrent_y = math.floor(current_y)
         if CheckPointCollision(fcurrent_x, fcurrent_y)[0]:
-            last_letter = CheckPointCollision(fcurrent_x, fcurrent_y)[1]
+            last_index = CheckPointCollision(fcurrent_x, fcurrent_y)[1]
             break
         elif CheckPointCollision(fcurrent_x-1,fcurrent_y)[0]:
-            last_letter = CheckPointCollision(fcurrent_x-1, fcurrent_y)[1]
+            last_index = CheckPointCollision(fcurrent_x-1, fcurrent_y)[1]
             break
         current_x += dx
         current_y += dy
@@ -158,10 +159,10 @@ def CalculateRay(x, y, direction):
         fcurrent_x = math.floor(current_x)
         fcurrent_y = round(current_y)
         if CheckPointCollision(fcurrent_x, fcurrent_y)[0]:
-            letter = CheckPointCollision(fcurrent_x, fcurrent_y)[1]
+            index = CheckPointCollision(fcurrent_x, fcurrent_y)[1]
             break
         elif CheckPointCollision(fcurrent_x,fcurrent_y-1)[0]:
-            letter = CheckPointCollision(fcurrent_x, fcurrent_y-1)[1]
+            index = CheckPointCollision(fcurrent_x, fcurrent_y-1)[1]
             break
         current_x += dx
         current_y += dy
@@ -173,7 +174,7 @@ def CalculateRay(x, y, direction):
     if distance < second_distance:
         fx = x_lastx
         fy = x_lasty
-        letter = last_letter
+        index = last_index
         foffset = fy%1
         fdir = 1
     else:
@@ -186,7 +187,7 @@ def CalculateRay(x, y, direction):
     if fdistance == 0:
         fdistance = 0.01
 
-    return Ray(fdistance,letter,foffset,fx,fy)
+    return Ray(fdistance,index,foffset,fx,fy)
     # ---------------------------------
 
 
@@ -258,8 +259,8 @@ while 1:
     check_y = py + math.sin(pdir) * 0.5
     check_result = CheckPointCollision(check_x,check_y)
 
-    if (check_result[0]) and (check_result[1] == "d") and (pygame.K_e in keysDown):
-        map[math.floor(check_x)][math.floor(check_y)] = " "
+    if (check_result[0]) and (check_result[1] == 4) and (pygame.K_e in keysDown):
+        map[math.floor(check_x)][math.floor(check_y)] = 0
 
 
     # RAYS INFO
@@ -276,15 +277,8 @@ while 1:
     # DRAW MAP
     for x in range(mapWidth):
         for y in range(mapHeight):
-            if(map[x][y] != " "):
-                if map[x][y] == "a":
-                    texture = pygtextures[0]
-                if map[x][y] == "b":
-                    texture = pygtextures[1]
-                if map[x][y] == "c":
-                    texture = pygtextures[2]
-                if map[x][y] == "d":
-                    texture = pygtextures[3]
+            if(map[x][y] != 0):
+                texture = pygtextures[map[x][y] - 1]
                 screen.blit(texture,(x*tile_size,y*tile_size))
 
     # DRAW RAYS
@@ -296,15 +290,7 @@ while 1:
     x_pos = 400
     for ray in rays:
         line_height = 200/ray.distance
-        texture = textures[0]
-        if ray.texture_letter == "a":
-            texture = textures[0]
-        elif ray.texture_letter == "b":
-            texture = textures[1]
-        elif ray.texture_letter == "c":
-            texture = textures[2]
-        elif ray.texture_letter == "d":
-            texture = textures[3]
+        texture = textures[ray.texture_index-1]
 
         for i in range(texture_size):
             color = texture.getpixel((ray.texture_offset_x,i))
