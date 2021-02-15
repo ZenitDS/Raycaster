@@ -2,7 +2,6 @@ import pygame
 import colors
 import math
 import sys
-from io import StringIO
 from PIL import Image
 PI = math.pi
 pygame.init()
@@ -24,8 +23,8 @@ texture_size = 16
 textures = []
 pygtextures = []
 def AddTexture(path):
-    textures.append(Image.open(path).convert("RGB"))
-    img = pygame.image.load(path)
+    textures.append(Image.open(f"C:/Users/izanr/github/Raycaster/textures/{path}").convert("RGB"))
+    img = pygame.image.load(f"C:/Users/izanr/github/Raycaster/textures/{path}")
     img = pygame.transform.scale(img,(tile_size,tile_size))
     pygtextures.append(img)
 
